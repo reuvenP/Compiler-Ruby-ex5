@@ -4,14 +4,18 @@ require 'rexml/document'
 class CompilationEngine
 
   def initialize(path)
-    JackTokenizer.new(path)
+    tokenizer = JackTokenizer.new(path)
     @all_files = Dir.entries(path).select{|f| f.end_with? 'T.xml'}
     @string_counter = 0
     @string_array = Array.new
-    @all_files.each {|file|
+    @tokens_xml_array = tokenizer.get_tokens_xml_array
+    @parse_tree_array = Array.new
+    #@all_files.each {|file|
+    @tokens_xml_array.each {|file|
       @tokens_array = []
       @parse_tree = []
-      tokens_stream = File.read(path + "\\" + file)
+      #tokens_stream = File.read(path + "\\" + file)
+      tokens_stream = file
       doc = REXML::Document.new(tokens_stream)
       root = doc.root
       root.elements.each {|token|
@@ -75,10 +79,11 @@ class CompilationEngine
         end
         i += 1
       end
-      out_file = path + "\\" + file[0..-6] + '.xml'
-      File.open(out_file, 'w') do |f|
-        f.puts(arr)
-      end
+      @parse_tree_array.push(arr)
+      #out_file = path + "\\" + file[0..-6] + '.xml'
+      #File.open(out_file, 'w') do |f|
+      #  f.puts(arr)
+      #end
     }
   end
 
@@ -327,6 +332,7 @@ class CompilationEngine
     base
   end
 
+  def get_parse_tree_array
+    @parse_tree_array
+  end
 end
-
-CompilationEngine.new(ARGV[0])

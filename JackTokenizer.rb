@@ -11,14 +11,16 @@ class JackTokenizer
                  LET: 'let', DO: 'do', IF: 'if', ELSE: 'else', WHILE: 'while', RETURN: 'return', TRUE: 'true',
                  FALSE: 'false', NULL: 'null', THIS: 'this'}
     @all_files = Dir.entries(path).select{|f| f.end_with? '.jack'}
+    @tokens_xml_array = []
     @all_files.each { |file|
-      xml_stream = tokenize_file(path + "\\" + file)
-      xml_file = file[0..-6]
-      xml_file << 'T.xml'
-      xml_full_path = path + "\\" + xml_file
-      File.open(xml_full_path, 'w') do |f|
-        f.puts(xml_stream)
-      end
+      @tokens_xml_array.push(tokenize_file(path + "\\" + file))
+      #xml_stream = tokenize_file(path + "\\" + file)
+      #xml_file = file[0..-6]
+      #xml_file << 'T.xml'
+      #xml_full_path = path + "\\" + xml_file
+      #File.open(xml_full_path, 'w') do |f|
+      #  f.puts(xml_stream)
+      #end
     }
   end
 
@@ -150,6 +152,9 @@ class JackTokenizer
       i += 1
     end
     xml << '</tokens>'
-    
+  end
+
+  def get_tokens_xml_array
+    @tokens_xml_array
   end
 end
