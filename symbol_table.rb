@@ -50,14 +50,56 @@ class SymbolTable
 
 
   def kind_of(name)
-
+    i = 0
+    while i < @subroutine_table.length
+      if @subroutine_table[i][0] == name
+        return @subroutine_table[i][2]
+      end
+      i += 1
+    end
+    i = 0
+    while i < @symbol_table.length
+      if @symbol_table[i][0] == name
+        return @symbol_table[i][2]
+      end
+      i += 1
+    end
+    'none'
   end
 
   def type_of(name)
-
+    i = 0
+    while i < @subroutine_table.length
+      if @subroutine_table[i][0] == name
+        return @subroutine_table[i][1]
+      end
+      i += 1
+    end
+    i = 0
+    while i < @symbol_table.length
+      if @symbol_table[i][0] == name
+        return @symbol_table[i][1]
+      end
+      i += 1
+    end
+    'none'
   end
 
   def index_of(name)
-
+    i = 0
+    while i < @subroutine_table.length
+      if @subroutine_table[i][0] == name
+        return @subroutine_table[i][3]
+      end
+      i += 1
+    end
+    i = 0
+    while i < @symbol_table.length
+      if @symbol_table[i][0] == name
+        return @symbol_table[i][3]
+      end
+      i += 1
+    end
+    -1
   end
 end
