@@ -1,10 +1,14 @@
 require './JackTokenizer'
+require './symbol_table'
+require './vm_writer'
 require 'rexml/document'
 
 class CompilationEngine
 
   def initialize(path)
     tokenizer = JackTokenizer.new(path)
+    @vm_writer = VMWriter.new
+    @symbol_table = SymbolTable.new
     @tokens_xml_array = tokenizer.get_tokens_xml_array
     @tokens_xml_array.each {|file|
       tokens_stream = file
@@ -15,8 +19,6 @@ class CompilationEngine
         elem = [token.name, token.text[1..-2]]
         @tokens_array.push(elem)
       }
-
-      puts @tokens_array.to_s
       compile_class
     }
   end
@@ -38,7 +40,17 @@ class CompilationEngine
   end
 
   def compile_class #Compiles a complete class.
-
+    get_next_token #class
+    @class_name = get_next_token[1] #class name
+    get_next_token #'{'
+    while next_token[1] == 'static' or next_token[1] == 'field' #classVarDec*
+      compile_class_var_dec
+    end
+    while next_token[1] == 'constructor' or next_token[1] == 'function' or next_token[1] == 'method' #subroutineDec*
+      compile_subroutine
+    end
+    get_next_token #'}'
+    @vm_writer.close
   end
 
   def compile_class_var_dec #Compiles a static declaration or a field declaration.
@@ -46,6 +58,7 @@ class CompilationEngine
   end
 
   def compile_subroutine #Compiles a complete method, function, or constructor.
+    @symbol_table.start_subroutine
 
   end
 
