@@ -6,8 +6,8 @@ require 'rexml/document'
 class CompilationEngine
 
   def initialize(path)
+    @path = path
     tokenizer = JackTokenizer.new(path)
-    @vm_writer = VMWriter.new
     @symbol_table = SymbolTable.new
     @tokens_xml_array = tokenizer.get_tokens_xml_array
     @tokens_xml_array.each {|file|
@@ -42,6 +42,7 @@ class CompilationEngine
   def compile_class #Compiles a complete class.
     get_next_token #class
     @class_name = get_next_token[1] #class name
+    @vm_writer = VMWriter.new(@class_name)
     get_next_token #'{'
     while next_token[1] == 'static' or next_token[1] == 'field' #classVarDec*
       compile_class_var_dec
@@ -50,7 +51,7 @@ class CompilationEngine
       compile_subroutine
     end
     get_next_token #'}'
-    @vm_writer.close
+    @vm_writer.close(@path)
   end
 
   def compile_class_var_dec #Compiles a static declaration or a field declaration.
