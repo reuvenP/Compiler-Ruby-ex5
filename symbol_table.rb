@@ -102,4 +102,8 @@ class SymbolTable
     end
     -1
   end
+
+  def print_table #TODO: remove
+    puts @symbol_table.to_s
+  end
 end
