@@ -14,13 +14,6 @@ class JackTokenizer
     @tokens_xml_array = []
     @all_files.each { |file|
       @tokens_xml_array.push(tokenize_file(path + "\\" + file))
-      #xml_stream = tokenize_file(path + "\\" + file)
-      #xml_file = file[0..-6]
-      #xml_file << 'T.xml'
-      #xml_full_path = path + "\\" + xml_file
-      #File.open(xml_full_path, 'w') do |f|
-      #  f.puts(xml_stream)
-      #end
     }
   end
 
