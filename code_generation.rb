@@ -8,7 +8,13 @@ class CodeGeneration
     @parse_tree_array.each {|tree|
       doc = REXML::Document.new(tree.to_s)
       root = doc.root
-      puts root.elements["/"].name
+      root.elements.each {|e|
+        if e.name == 'subroutineDec'
+          e.elements.each{|ee|
+            puts ee
+          }
+        end
+      }
     }
   end
 end
