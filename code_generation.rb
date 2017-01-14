@@ -249,7 +249,17 @@ class CodeGeneration
           when 'this'
             vm << "push pointer 0\n"
         end
-      when ''
+      when 'symbol'
+        case trim(e.elements[1].text)
+          when '-'
+            vm << compile_term(e.elements[2])
+            vm << "neg\n"
+          when '~'
+            vm << compile_term(e.elements[2])
+            vm << "not\n"
+          when '('
+            vm << compile_expression(e.elements[2])
+        end
     end
     vm
   end

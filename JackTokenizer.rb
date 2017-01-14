@@ -3,9 +3,9 @@ class JackTokenizer
 
   @token_types = {KEYWORD: 'keyword', SYMBOL: 'symbol', IDENTIFIER: 'identifier', INT_CONST: 'integerConstant', STRING_CONST: 'stringConstant'}
 
-
+  #TODO: add ~ to level 4
   def initialize(path) #Constructor. Opens the input file/stream and gets ready to tokenize it.
-    @symbols = %w|{ } ( ) [ ] . , ; + - * / & \| < > = - |
+    @symbols = %w|{ } ( ) [ ] . , ; + - * / & \| < > = ~ |
     @keywords = {CLASS: 'class', METHOD: 'method', FUNCTION: 'function', CONSTRUCTOR: 'constructor',  INT: 'int',
                  BOOLEAN: 'boolean', CHAR: 'char', VOID: 'void', VAR: 'var', STATIC: 'static', FIELD: 'field',
                  LET: 'let', DO: 'do', IF: 'if', ELSE: 'else', WHILE: 'while', RETURN: 'return', TRUE: 'true',
