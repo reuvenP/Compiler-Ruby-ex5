@@ -6,8 +6,6 @@ require 'rexml/document'
 class CodeGeneration
   def initialize(path)
     engine = CompilationEngine.new(path)
-    @while_counter = 0
-    @if_counter = 0
     @parse_tree_array = engine.get_parse_tree_array
     @parse_tree_array.each {|tree|
       doc = REXML::Document.new(tree.to_s)
@@ -61,6 +59,8 @@ class CodeGeneration
   def compile_subroutine(e) #Compiles a complete method, function, or constructor.
     vm = ''
     body = ''
+    @while_counter = 0
+    @if_counter = 0
     @symbol_table.start_subroutine
     kind = trim(e.elements[1].text)
     type = trim(e.elements[2].text)
@@ -77,7 +77,12 @@ class CodeGeneration
     vars = @symbol_table.var_count('var')
     vm << 'function ' << @class_name << '.' << name << ' ' << vars.to_s << "\n"
     if kind == 'method'
-      vm << "push argument 0\npop pointer 0\n" #TODO: check it
+      vm << "push argument 0\npop pointer 0\n"
+    end
+    if name == 'new'
+      num_of_fields = @symbol_table.var_count('field').to_s
+      vm << 'push constant ' << num_of_fields << "\n"
+      vm << "call Memory.alloc 1\npop pointer 0\n"
     end
     vm << body
     vm
@@ -157,7 +162,7 @@ class CodeGeneration
     do_elem = e.elements[1]
     e.elements.delete do_elem
     vm = compile_subroutine_call(e)
-    vm << "pop temp 0\n" #TODO: check it
+    vm << "pop temp 0\n"
     vm
   end
 
@@ -170,11 +175,18 @@ class CodeGeneration
     }
     vm = ''
     if trim(e.elements[2].text) == '.'
-      vm << compile_expression_list(e.elements[5])
-      vm << 'call ' << trim(e.elements[1].text) << '.' << trim(e.elements[3].text) << ' ' << arguments.to_s << "\n"
-    else
+      if @symbol_table.index_of(trim(e.elements[1].text)) == -1
+        vm << compile_expression_list(e.elements[5])
+        vm << 'call ' << trim(e.elements[1].text) << '.' << trim(e.elements[3].text) << ' ' << arguments.to_s << "\n"
+      else
+        vm << read_var_to_vm(e.elements[1])
+        vm << compile_expression_list(e.elements[5])
+        vm << 'call ' << @symbol_table.type_of(trim(e.elements[1].text)) << '.' << trim(e.elements[3].text) << ' ' << (arguments + 1).to_s << "\n"
+      end
+    else #method call
+      vm << "push pointer 0\n"
       vm << compile_expression_list(e.elements[3])
-      vm << 'call ' << @class_name << '.' << trim(e.elements[1].text) << ' ' << arguments.to_s << "\n"
+      vm << 'call ' << @class_name << '.' << trim(e.elements[1].text) << ' ' << (arguments + 1).to_s << "\n"
     end
     vm
   end
@@ -267,9 +279,9 @@ class CodeGeneration
         when '-'
           vm << "sub\n"
         when '*'
-          vm << "call Math.multiply 2\n" #TODO: possibly replace with func call
+          vm << "call Math.multiply 2\n"
         when '/'
-          vm << "call Math.divide 2\n" #TODO: possibly replace with func call
+          vm << "call Math.divide 2\n"
         when '&'
           vm << "and\n"
         when '|'
@@ -336,10 +348,8 @@ class CodeGeneration
               vm << "add\n"
               vm << "pop pointer 1\npush that 0\n"
             when '('
-              #TODO: imp
               vm << compile_subroutine_call(e)
             when '.'
-              #TODO: imp
               vm << compile_subroutine_call(e)
           end
         end
