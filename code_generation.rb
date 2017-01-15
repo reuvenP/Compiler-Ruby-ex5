@@ -180,7 +180,6 @@ class CodeGeneration
   end
 
   def compile_let(e) #Compiles a let statement.
-    #print_sub_elements(e)
     vm = ''
     num_of_expr = 0
     e.elements.each('expression'){
@@ -199,7 +198,11 @@ class CodeGeneration
       vm << right_side_vm
       vm << write_var_to_vm(e.elements[2])
     else
-      #TODO: imp
+      vm << compile_expression(e.elements[4])
+      vm << read_var_to_vm(e.elements[2])
+      vm << "add\n"
+      vm << right_side_vm
+      vm << "pop temp 0\npop pointer 1\npush temp 0\npop that 0\n"
     end
     vm
   end
@@ -328,7 +331,10 @@ class CodeGeneration
         else
           case trim(e.elements[2].text)
             when '['
-              #TODO: imp
+              vm << compile_expression(e.elements[3])
+              vm << read_var_to_vm(e.elements[1])
+              vm << "add\n"
+              vm << "pop pointer 1\npush that 0\n"
             when '('
               #TODO: imp
               vm << compile_subroutine_call(e)
