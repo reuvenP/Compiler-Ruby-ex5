@@ -20,7 +20,10 @@ class CodeGeneration
       root.elements.each('subroutineDec') {|e|
         vm << compile_subroutine(e)
       }
-      puts vm #TODO: write to file
+      out_file = path + "\\" + @class_name + '.vm'
+      File.open(out_file, 'w') do |f|
+        f.puts(vm)
+      end
     }
   end
 
@@ -405,11 +408,6 @@ class CodeGeneration
     str[1..-2]
   end
 
-  def print_sub_elements(e) #TODO: remove
-    e.elements.each{|sub|
-      puts sub
-    }
-  end
 end
 
 cg = CodeGeneration.new(ARGV[0])
