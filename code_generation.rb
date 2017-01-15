@@ -221,7 +221,7 @@ class CodeGeneration
   end
 
   def compile_term(e) #Compiles a term. This routine is faced with a slight difficulty when trying to decide between some of the alternative parsing rules. Specifically, if the current token is an identifier, the routine must distinguish between a variable, an array entry, and a subroutine call. A single look-ahead token, which may be one of “[“, “(“, or “.” suffices to distinguish between the three possibilities. Any other token is not part of this term and should not be advanced over.
-    #print_sub_elements(e)
+    print_sub_elements(e)
     vm = ''
     case e.elements[1].name
       when 'integerConstant'
