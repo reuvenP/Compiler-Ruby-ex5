@@ -6,6 +6,8 @@ require 'rexml/document'
 class CodeGeneration
   def initialize(path)
     engine = CompilationEngine.new(path)
+    @while_counter = 0
+    @if_counter = 0
     @parse_tree_array = engine.get_parse_tree_array
     @parse_tree_array.each {|tree|
       doc = REXML::Document.new(tree.to_s)
@@ -74,6 +76,9 @@ class CodeGeneration
     }
     vars = @symbol_table.var_count('var')
     vm << 'function ' << @class_name << '.' << name << ' ' << vars.to_s << "\n"
+    if kind == 'method'
+      vm << "push argument 0\npop pointer 0\n" #TODO: check it
+    end
     vm << body
     vm
   end
@@ -90,7 +95,6 @@ class CodeGeneration
   end
 
   def compile_subroutine_body(e)
-    #TODO: implement diff method - function - constructor
     e.elements.each('varDec'){|sub|
       compile_var_dec(sub)
     }
@@ -150,12 +154,34 @@ class CodeGeneration
   end
 
   def compile_do(e) #Compiles a do statement.
-    print_sub_elements(e)
+    do_elem = e.elements[1]
+    e.elements.delete do_elem
+    vm = compile_subroutine_call(e)
+    vm << "pop temp 0\n" #TODO: check it
+    vm
+  end
+
+  def compile_subroutine_call(e)
+    arguments = 0
+    e.elements.each('expressionList'){|list|
+      list.elements.each('expression'){
+        arguments += 1
+      }
+    }
     vm = ''
+    if trim(e.elements[2].text) == '.'
+      vm << compile_expression_list(e.elements[5])
+      vm << 'call ' << trim(e.elements[1].text) << '.' << trim(e.elements[3].text) << ' ' << arguments.to_s << "\n"
+    else
+      vm << compile_expression_list(e.elements[3])
+      vm << 'call ' << @class_name << '.' << trim(e.elements[1].text) << ' ' << arguments.to_s << "\n"
+    end
+    vm
   end
 
   def compile_let(e) #Compiles a let statement.
     #print_sub_elements(e)
+    vm = ''
     num_of_expr = 0
     e.elements.each('expression'){
       num_of_expr += 1
@@ -169,24 +195,61 @@ class CodeGeneration
       right_side_expression = e.elements[7]
     end
     right_side_vm = compile_expression(right_side_expression)
-    puts right_side_vm
-    #TODO: complete it!
-    vm = ''
+    if left_side_expression == nil
+      vm << right_side_vm
+      vm << write_var_to_vm(e.elements[2])
+    else
+      #TODO: imp
+    end
+    vm
   end
 
   def compile_while(e) #Compiles a while statement.
-    print_sub_elements(e)
-    vm = ''
+    while_counter = @while_counter
+    @while_counter += 1
+    vm = 'label WHILE_EXP' << while_counter.to_s << "\n"
+    vm << compile_expression(e.elements[3])
+    vm << "not\n"
+    vm << 'if-goto WHILE_END' << while_counter.to_s << "\n"
+    vm << compile_statements(e.elements[6])
+    vm << 'goto WHILE_EXP' << while_counter.to_s << "\n"
+    vm << 'label WHILE_END' << while_counter.to_s << "\n"
+    vm
   end
 
   def compile_return(e) #Compiles a return statement.
-    print_sub_elements(e)
     vm = ''
+    case e.elements[2].name
+      when 'symbol'
+        vm << "push constant 0\nreturn\n"
+      when 'expression'
+        vm << compile_expression(e.elements[2])
+        vm << "return\n"
+    end
+    vm
   end
 
   def compile_if(e) #Compiles an if statement, possibly with a trailing else clause.
-    print_sub_elements(e)
-    vm = ''
+    if_counter = @if_counter
+    @if_counter += 1
+    stat_counter = 0
+    e.elements.each('statements'){
+      stat_counter += 1
+    }
+    vm = compile_expression(e.elements[3])
+    vm << 'if-goto IF_TRUE' << if_counter.to_s << "\n"
+    vm << 'goto IF_FALSE' << if_counter.to_s << "\n"
+    vm << 'label IF_TRUE' << if_counter.to_s << "\n"
+    vm << compile_statements(e.elements[6])
+    if stat_counter == 1 #if without else
+      vm << 'label IF_FALSE' << if_counter.to_s << "\n"
+    else
+      vm << 'goto IF_END' << if_counter.to_s << "\n"
+      vm << 'label IF_FALSE' << if_counter.to_s << "\n"
+      vm << compile_statements(e.elements[10])
+      vm << 'label IF_END' << if_counter.to_s << "\n"
+    end
+    vm
   end
 
   def compile_expression(e) #Compiles an expression.
@@ -221,7 +284,6 @@ class CodeGeneration
   end
 
   def compile_term(e) #Compiles a term. This routine is faced with a slight difficulty when trying to decide between some of the alternative parsing rules. Specifically, if the current token is an identifier, the routine must distinguish between a variable, an array entry, and a subroutine call. A single look-ahead token, which may be one of “[“, “(“, or “.” suffices to distinguish between the three possibilities. Any other token is not part of this term and should not be advanced over.
-    print_sub_elements(e)
     vm = ''
     case e.elements[1].name
       when 'integerConstant'
@@ -260,13 +322,67 @@ class CodeGeneration
           when '('
             vm << compile_expression(e.elements[2])
         end
+      when 'identifier'
+        if e.elements.count == 1 #simple var
+          vm << read_var_to_vm(e.elements[1])
+        else
+          case trim(e.elements[2].text)
+            when '['
+              #TODO: imp
+            when '('
+              #TODO: imp
+              vm << compile_subroutine_call(e)
+            when '.'
+              #TODO: imp
+              vm << compile_subroutine_call(e)
+          end
+        end
+    end
+    vm
+  end
+
+  def read_var_to_vm(e)
+    vm = ''
+    index = @symbol_table.index_of(trim(e.text))
+    kind = @symbol_table.kind_of(trim(e.text))
+    type = @symbol_table.type_of(trim(e.text))
+    case kind
+      when 'arg'
+        vm << 'push argument ' << index.to_s << "\n"
+      when 'var'
+        vm << 'push local ' << index.to_s << "\n"
+      when 'static'
+        vm << 'push static ' << index.to_s << "\n"
+      when 'field'
+        vm << 'push this ' << index.to_s << "\n"
+    end
+    vm
+  end
+
+  def write_var_to_vm(e)
+    vm = ''
+    index = @symbol_table.index_of(trim(e.text))
+    kind = @symbol_table.kind_of(trim(e.text))
+    type = @symbol_table.type_of(trim(e.text))
+    case kind
+      when 'arg'
+        vm << 'pop argument ' << index.to_s << "\n"
+      when 'var'
+        vm << 'pop local ' << index.to_s << "\n"
+      when 'static'
+        vm << 'pop static ' << index.to_s << "\n"
+      when 'field'
+        vm << 'pop this ' << index.to_s << "\n"
     end
     vm
   end
 
   def compile_expression_list(e) #Compiles a (possibly empty) comma-separated list of expressions.
-    print_sub_elements(e)
     vm = ''
+    e.elements.each('expression'){|exp|
+      vm << compile_expression(exp)
+    }
+    vm
   end
 
   def trim(str)
