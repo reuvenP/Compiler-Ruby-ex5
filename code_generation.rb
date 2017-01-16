@@ -1,5 +1,4 @@
 require './compilation_engine'
-require './vm_writer'
 require './symbol_table'
 require 'rexml/document'
 
@@ -11,7 +10,6 @@ class CodeGeneration
       doc = REXML::Document.new(tree.to_s)
       root = doc.root
       @class_name = root.elements[2].text[1..-2]
-      @vm_writer = VMWriter.new(@class_name)
       @symbol_table = SymbolTable.new
       vm = ''
       root.elements.each('classVarDec') {|e|
